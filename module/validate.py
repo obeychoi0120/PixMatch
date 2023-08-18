@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 def combine_img_cam(img, cam, p=0.5): # img: (3, H, W), cam: (H, W)
-    heatmap = cm.jet(cam)[:,:,:-1]#*255  
+    heatmap = cm.jet(cam)[:,:,:-1]
     heatmap = heatmap.transpose(2,0,1)
     img = img / np.max(img)
     mix_img = p * img + (1-p) * heatmap
@@ -36,16 +36,12 @@ def validate_voc_ppc(args, model, data_loader, iter, tag='val'):
 
         conf_px = 0
         crt = 0
-
         conf_fg_px = 0
         crt_fg = 0
-
         bdry_px = 0
         crt_bdry = 0    
-
         exp_px = 0
         crt_exp = 0
-
         tot_px = 0
     
         for i, (img_id, img, label) in tqdm(enumerate(data_loader)):

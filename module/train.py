@@ -174,9 +174,6 @@ def train_ssl(train_dataloader, val_dataloader, model, optimizer, max_step, args
         print('EMA disabled')
         ema = None
 
-    # CutMix
-    print("CutMix enabled") if args.use_cutmix else print("CutMix disabled")
-
     if args.bdry_lambda != 0.0:
         print(f"Boundary loss ratio: {args.bdry_lambda}")
 

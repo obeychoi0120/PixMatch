@@ -57,27 +57,14 @@ def get_arguments():
 
     ### Semi-supervised Learning ###
     parser.add_argument('--mode', required=True, choices=['base', 'ssl'])
-    parser.add_argument("--ulb_dataset", default=None, choices=dataset_list, type=str)
-    parser.add_argument('--ulb_data_root', default=None, type=str)
-    parser.add_argument('--ulb_saliency_root', default=None, type=str)
-    parser.add_argument('--train_ulb_list', default='', type=str)
-    parser.add_argument('--mu', default=1.0, type=float)                # ratio of ulb / lb data
-        
+
     parser.add_argument('--use_ema',action='store_true') 
     parser.add_argument('--ema_m', default=0.999, type=float) 
     parser.add_argument('--p_cutoff', default=0.95, type=float)
-    parser.add_argument('--T', type=float, default=0.5)
-    parser.add_argument('--soft_label', action='store_true')            # hard label(Default) or soft label
-    parser.add_argument('--cdc_lambda', default=1.0, type=float)        # ratio of cdc loss
-    parser.add_argument('--cdc_T', default=0.5, type=float)             # Temperature of cdc loss
-    parser.add_argument('--cdc_norm', action='store_true')              # Normalize feature to calculate cdc loss
-    parser.add_argument('--cdc_inter', action='store_true')             # Calculate Inter-image pixel    
     
     ### Augmentations ###
     parser.add_argument('--aug_type', default='strong', type=str)       # None / weak / strong : 'aug_type'
     parser.add_argument('--n_strong_augs', type=int)                    # number of RandAug
-    parser.add_argument('--use_cutmix', action='store_true')            # Use CutMix
-    parser.add_argument('--patch_k', default=None, type=int)
     parser.add_argument('--use_geom_augs', action='store_true')
 
     parser.add_argument('--bdry_size', default=0, type=int)
@@ -93,22 +80,10 @@ def get_arguments():
     elif args.dataset == 'coco':
         args.num_classes = 81
     
-    # Unlabeled Dataset
-    if args.mode == 'ssl':
-        if args.ulb_dataset is None:
-            args.ulb_dataset = args.dataset
-        if args.ulb_data_root is None:
-            args.ulb_data_root = args.data_root
-        if args.ulb_saliency_root is None:
-            args.ulb_saliency_root = args.saliency_root
 
     # Network type
     if 'contrast' in args.network:
         args.network_type = 'contrast'
-    elif 'cls' in args.network:
-        args.network_type = 'cls38'
-    elif 'cam' in args.network:
-        args.network_type = 'cls50'
     elif 'eps' in args.network:
         args.network_type = 'eps'
     else:
@@ -129,18 +104,6 @@ if __name__ == '__main__':
     args.log_folder = os.path.join('train_log', args.session)
     os.makedirs(args.log_folder, exist_ok=True)
 
-    pyutils.Logger(os.path.join(args.log_folder, 'log_cls.log'))
-    shutil.copyfile('./contrast_train.py', os.path.join(args.log_folder, 'contrast_train.py'))
-    shutil.copyfile('./contrast_infer.py', os.path.join(args.log_folder, 'contrast_infer.py'))
-    shutil.copyfile('./module/train.py', os.path.join(args.log_folder, 'train.py'))
-    shutil.copyfile('./module/ssl.py', os.path.join(args.log_folder, 'ssl.py'))
-    shutil.copyfile('./module/helper.py', os.path.join(args.log_folder, 'helper.py'))
-    if args.network_type == 'contrast':
-        shutil.copyfile('./network/resnet38_contrast.py', os.path.join(args.log_folder, 'resnet38_contrast.py'))
-    elif args.network_type == 'cls38':
-        shutil.copyfile('./network/resnet50_cam.py', os.path.join(args.log_folder, 'resnet38_cls.py'))
-    elif args.network_type == 'cls50':
-        shutil.copyfile('./network/resnet50_cam.py', os.path.join(args.log_folder, 'resnet50_cam.py'))
     # Control Randomness
     if args.seed:
         torch.manual_seed(args.seed)
@@ -161,18 +124,9 @@ if __name__ == '__main__':
     max_step = len(train_loader) * args.max_epoches
     
     # Load (ImageNet) Pretrained Model and Set optimizer
-    if args.network_type in ['contrast', 'cls38', 'eps'] :
-        model = get_model(args)
-        optimizer = get_optimizer(args, model, max_step)
+    model = get_model(args)
+    optimizer = get_optimizer(args, model, max_step)
         
-    elif args.network_type == 'cls50':
-        model = getattr(importlib.import_module(args.network), 'Net')()
-        param_groups = model.trainable_parameters()
-        optimizer = torchutils.PolyOptimizer([
-            {'params': param_groups[0], 'lr': args.lr, 'weight_decay': args.wt_dec},
-            {'params': param_groups[1], 'lr': 10*args.lr, 'weight_decay': args.wt_dec},
-        ], lr=args.lr, weight_decay=args.wt_dec, max_step=max_step)
-
     # DP
     model.cuda()
     model = torch.nn.DataParallel(model)
@@ -181,7 +135,7 @@ if __name__ == '__main__':
     if args.use_wandb:
         wandb.config.update(args)
     if args.mode == 'ssl':
-        train_ssl(train_loader, None, val_loader, model, optimizer, max_step, args)
+        train_ssl(train_loader, val_loader, model, optimizer, max_step, args)
     else:
         train_base(train_loader, val_loader, model, optimizer, max_step, args)
     print('Train Done.')

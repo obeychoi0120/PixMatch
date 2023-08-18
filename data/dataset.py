@@ -3,27 +3,14 @@ import os.path
 import PIL
 from PIL import Image
 import numpy as np
-import pdb
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
-import torchvision.datasets as dset
 
 from torchvision import transforms
 import torchvision.transforms.functional as vision_tf
-
-from util import imutils
 from util.imutils import RandomResizeLong, random_crop_with_saliency, HWC_to_CHW
 from data.augmentation.randaugment import RandAugment
-from module.helper import merge_patches_np, patch_with_tr
-
-from chainercv.chainer_experimental.datasets.sliceable import GetterDataset
-from chainercv.datasets.coco.coco_utils import get_coco
-from chainercv import utils
-
-import json
-import imageio
-
 
 def get_categories(num_classes=None, bg_last=False, get_dict=False):
     # VOC

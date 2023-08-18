@@ -15,7 +15,6 @@ def get_dataloader(args):
         ssl_params = {
             'aug_type'      : args.aug_type, 
             'n_strong_augs' : args.n_strong_augs,
-            'patch_k'       : args.patch_k, 
             'use_geom_augs' : args.use_geom_augs
             }
     else:
